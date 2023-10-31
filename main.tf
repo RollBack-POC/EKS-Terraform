@@ -93,7 +93,7 @@ resource "aws_eks_node_group" "worker-node-group" {
   node_group_name = "poc-workernodes"
   node_role_arn   = aws_iam_role.workernodes.arn
   subnet_ids      = [var.subnet_id_1, var.subnet_id_2]
-  instance_types  = ["t3.small"]
+  instance_types  = ["t2.xlarge"]
 
   scaling_config {
     desired_size = 1
@@ -105,5 +105,42 @@ resource "aws_eks_node_group" "worker-node-group" {
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
     #aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
+  ]
+}
+
+
+resource "aws_ecr_repository" "poc-ecr" {
+  name                 = "rollback-poc"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+}
+
+resource "null_resource" "kubeconfig-before" {
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --region us-east-2 --name ${aws_eks_cluster.poc-eks.name}"
+  }
+  depends_on = [
+    aws_eks_node_group.worker-node-group
+  ]
+}
+
+resource "null_resource" "codefresh-role" {
+  provisioner "local-exec" {
+    command = "./get_details.sh"
+  }
+  depends_on = [
+    null_resource.kubeconfig-before
+  ]
+}
+
+resource "null_resource" "kubeconfig-after" {
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --region us-east-2 --name ${aws_eks_cluster.poc-eks.name}"
+  }
+  depends_on = [
+    null_resource.codefresh-role
   ]
 }
