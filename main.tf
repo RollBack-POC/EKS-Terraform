@@ -144,3 +144,18 @@ resource "null_resource" "kubeconfig-after" {
     null_resource.codefresh-role
   ]
 }
+
+resource "helm_release" "datadog" {
+  name       = "datadog"
+  chart      = "datadog"
+  repository = "https://helm.datadoghq.com"
+
+  set {
+    name  = "datadog.apikey"
+    value = var.datadog_api_key
+  }
+
+  depends_on = [
+    null_resource.kubeconfig-after
+  ]
+}

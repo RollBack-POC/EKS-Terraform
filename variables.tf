@@ -5,3 +5,7 @@ variable "subnet_id_1" {
 variable "subnet_id_2" {
   type = string
 }
+
+variable "datadog_api_key" {
+  type = string
+}
